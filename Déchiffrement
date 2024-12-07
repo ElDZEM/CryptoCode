@@ -1,0 +1,124 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+#define SIZE 5 // Taille de la matrice Playfair
+
+// D�clare la matrice Playfair
+char playfairMatrix[SIZE][SIZE];
+
+// Fonction pour remplir la matrice Playfair
+void generatePlayfairMatrix(char *key) {
+    int alphabet[26] = {0};
+    int i, j, index = 0;
+
+    // Remplacer 'V' par 'W' dans la cl�
+    for (i = 0; key[i] != '\0'; i++) {
+        if (toupper(key[i]) == 'V') {
+            key[i] = 'W';
+        }
+    }
+
+    // Ajouter les caract�res de la cl�
+    for (i = 0; key[i] != '\0'; i++) {
+        char ch = toupper(key[i]);
+        if (ch >= 'A' && ch <= 'Z' && alphabet[ch - 'A'] == 0) {
+            alphabet[ch - 'A'] = 1;
+            playfairMatrix[index / SIZE][index % SIZE] = ch;
+            index++;
+        }
+    }
+
+    // Compl�ter avec les lettres restantes de l'alphabet
+    for (i = 0; i < 26; i++) {
+        if (i + 'A' == 'V') continue; // Ignorer 'V'
+        if (alphabet[i] == 0) {
+            playfairMatrix[index / SIZE][index % SIZE] = i + 'A';
+            index++;
+        }
+    }
+}
+
+// Fonction pour afficher la matrice Playfair
+void printMatrix() {
+    printf("Matrice Playfair :\n");
+    for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < SIZE; j++) {
+            printf("%c ", playfairMatrix[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+// Recherche les coordonn�es d'un caract�re dans la matrice
+void findPosition(char ch, int *row, int *col) {
+    for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < SIZE; j++) {
+            if (playfairMatrix[i][j] == ch) {
+                *row = i;
+                *col = j;
+                return;
+            }
+        }
+    }
+}
+
+// Fonction de d�chiffrement Playfair
+void decryptPlayfair(char *ciphertext, char *plaintext) {
+    int i, row1, col1, row2, col2;
+    char a, b;
+    int len = strlen(ciphertext);
+
+    for (i = 0; i < len; i += 2) {
+        a = toupper(ciphertext[i]);
+        b = toupper(ciphertext[i + 1]);
+
+        if (a == 'V') a = 'W';
+        if (b == 'V') b = 'W';
+
+        findPosition(a, &row1, &col1);
+        findPosition(b, &row2, &col2);
+
+        // Cas 1 : m�me ligne
+        if (row1 == row2) {
+            plaintext[i] = playfairMatrix[row1][(col1 - 1 + SIZE) % SIZE];
+            plaintext[i + 1] = playfairMatrix[row2][(col2 - 1 + SIZE) % SIZE];
+        }
+        // Cas 2 : m�me colonne
+        else if (col1 == col2) {
+            plaintext[i] = playfairMatrix[(row1 - 1 + SIZE) % SIZE][col1];
+            plaintext[i + 1] = playfairMatrix[(row2 - 1 + SIZE) % SIZE][col2];
+        }
+        // Cas 3 : rectangle
+        else {
+            plaintext[i] = playfairMatrix[row1][col2];
+            plaintext[i + 1] = playfairMatrix[row2][col1];
+        }
+    }
+
+    plaintext[len] = '\0'; // Terminer la cha�ne
+}
+
+int main() {
+    char key[100], ciphertext[100], plaintext[100];
+
+    // Saisie de la cl�
+    printf("Entrez la cle pour generer la matrice Playfair : ");
+    scanf("%s", key);
+
+    // G�n�ration de la matrice
+    generatePlayfairMatrix(key);
+    printMatrix();
+
+    // Saisie du message chiffr�
+    printf("Entrez le message chiffre (sans espaces) : ");
+    scanf("%s", ciphertext);
+
+    // D�chiffrement
+    decryptPlayfair(ciphertext, plaintext);
+
+    // Affichage du r�sultat
+    printf("Message dechiffre : %s\n", plaintext);
+
+    return 0;
+}
