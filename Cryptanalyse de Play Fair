@@ -1,0 +1,131 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include <stdlib.h>
+
+#define SIZE 5 // Taille de la matrice Playfair
+#define ALPHABET "ABCDEFGHIKLMNOPQRSTUVWXYZ" // Alphabet sans 'J' (V=W)
+
+char playfairMatrix[SIZE][SIZE]; // Matrice Playfair
+char currentKey[26]; // Cl� actuelle simul�e
+
+// Fonction pour remplir la matrice Playfair avec une cl� donn�e
+void generatePlayfairMatrix(char *key) {
+    int used[26] = {0};
+    int i, index = 0;
+
+    // Construire la cl� finale en utilisant la permutation actuelle
+    for (i = 0; key[i] != '\0'; i++) {
+        if (key[i] == 'V') key[i] = 'W'; // Remplacer V par W
+        if (!used[key[i] - 'A']) {
+            currentKey[index++] = key[i];
+            used[key[i] - 'A'] = 1;
+        }
+    }
+
+    // Ajouter les lettres restantes
+    for (i = 0; i < 26; i++) {
+        if ((i + 'A') == 'V' || used[i]) continue; // Ignorer V (trait� comme W)
+        currentKey[index++] = i + 'A';
+    }
+
+    // Construire la matrice Playfair
+    for (i = 0; i < 25; i++) {
+        playfairMatrix[i / SIZE][i % SIZE] = currentKey[i];
+    }
+}
+
+// Recherche les coordonn�es d'un caract�re dans la matrice
+void findPosition(char ch, int *row, int *col) {
+    for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < SIZE; j++) {
+            if (playfairMatrix[i][j] == ch) {
+                *row = i;
+                *col = j;
+                return;
+            }
+        }
+    }
+}
+
+// Fonction de d�chiffrement Playfair
+void decryptPlayfair(char *ciphertext, char *plaintext) {
+    int i, row1, col1, row2, col2;
+    char a, b;
+    int len = strlen(ciphertext);
+
+    for (i = 0; i < len; i += 2) {
+        a = toupper(ciphertext[i]);
+        b = toupper(ciphertext[i + 1]);
+
+        if (a == 'V') a = 'W';
+        if (b == 'V') b = 'W';
+
+        findPosition(a, &row1, &col1);
+        findPosition(b, &row2, &col2);
+
+        // Cas 1 : m�me ligne
+        if (row1 == row2) {
+            plaintext[i] = playfairMatrix[row1][(col1 - 1 + SIZE) % SIZE];
+            plaintext[i + 1] = playfairMatrix[row2][(col2 - 1 + SIZE) % SIZE];
+        }
+        // Cas 2 : m�me colonne
+        else if (col1 == col2) {
+            plaintext[i] = playfairMatrix[(row1 - 1 + SIZE) % SIZE][col1];
+            plaintext[i + 1] = playfairMatrix[(row2 - 1 + SIZE) % SIZE][col2];
+        }
+        // Cas 3 : rectangle
+        else {
+            plaintext[i] = playfairMatrix[row1][col2];
+            plaintext[i + 1] = playfairMatrix[row2][col1];
+        }
+    }
+
+    plaintext[len] = '\0'; // Terminer la cha�ne
+}
+
+// Fonction pour g�n�rer les permutations de l'alphabet
+void swap(char *a, char *b) {
+    char temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+void permute(char *alphabet, int l, int r, char *ciphertext) {
+    if (l == r) {
+        char plaintext[100];
+
+        // Construire une matrice avec la permutation actuelle
+        generatePlayfairMatrix(alphabet);
+
+        // D�chiffrer le message
+        decryptPlayfair(ciphertext, plaintext);
+
+        // Afficher la possibilit�
+        printf("Cle : %s => Message dechiffre : %s\n", alphabet, plaintext);
+        return;
+    }
+
+    for (int i = l; i <= r; i++) {
+        swap(&alphabet[l], &alphabet[i]);
+        permute(alphabet, l + 1, r, ciphertext);
+        swap(&alphabet[l], &alphabet[i]); // Revenir � l'�tat pr�c�dent
+    }
+}
+
+int main() {
+    char ciphertext[100];
+    char alphabet[] = ALPHABET;
+
+    // Saisie du message chiffr�
+    printf("Entrez le message chiffre(sans espaces): ");
+    scanf("%s", ciphertext);
+
+    printf("Demarrage de la cryptanalyse...\n");
+
+    // G�n�rer toutes les permutations et tester
+    permute(alphabet, 0, strlen(alphabet) - 2, ciphertext); // -2 pour exclure 'J'
+
+    return 0;
+
+}
